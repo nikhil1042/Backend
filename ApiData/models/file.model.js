@@ -25,4 +25,8 @@ const fileSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Add indexes for faster queries
+fileSchema.index({ createdAt: -1 }); // Fast sorting by creation date
+fileSchema.index({ uploadedBy: 1 }); // Fast filtering by uploader
+
 export default mongoose.model("File", fileSchema);
