@@ -1,11 +1,5 @@
 import File from "../models/file.model.js";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-// Get __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { v2 as cloudinary } from "cloudinary";
 
 // =====================
 // Upload File
@@ -18,14 +12,8 @@ export const uploadFile = async (req, res) => {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    // Ensure uploads folder exists
-    const uploadsDir = path.join(__dirname, "../uploads");
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    // Store relative path that can be accessed via static serving
-    const fileUrl = `/uploads/${req.file.filename}`;
+    // Cloudinary automatically uploads and returns URL
+    const fileUrl = req.file.path; // Cloudinary URL
 
     const newFile = await File.create({
       title,
@@ -108,19 +96,17 @@ export const deleteFile = async (req, res) => {
       return res.status(404).json({ message: "File not found" });
     }
 
-    // Extract filename from fileUrl
-    let filename = file.fileUrl;
-    if (filename.includes("/uploads/")) {
-      filename = filename.split("/uploads/")[1];
-    }
+    // Extract public_id from Cloudinary URL
+    const urlParts = file.fileUrl.split('/');
+    const publicIdWithExt = urlParts[urlParts.length - 1];
+    const publicId = `file-share-hub/${publicIdWithExt.split('.')[0]}`;
 
-    // Delete file from uploads folder
-    const uploadsDir = path.join(__dirname, "../uploads");
-    const filePath = path.join(uploadsDir, filename);
-
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      console.log(`✅ File deleted: ${filename}`);
+    // Delete from Cloudinary
+    try {
+      await cloudinary.uploader.destroy(publicId);
+      console.log(`✅ File deleted from Cloudinary: ${publicId}`);
+    } catch (cloudError) {
+      console.error('Cloudinary delete error:', cloudError);
     }
 
     await File.findByIdAndDelete(id);

@@ -34,7 +34,14 @@ if (!fs.existsSync(uploadsDir)) {
 // Middlewares
 // =======================
 app.use(cors({
-  origin: ['http://localhost:4200', 'http://localhost:4300', 'http://localhost:65231', 'https://backend-i8c3.onrender.com'],
+  origin: [
+    'http://localhost:4200',
+    'http://localhost:4300',
+    'http://localhost:65231',
+    'https://backend-i8c3.onrender.com',
+    'https://*.vercel.app',
+    /\.vercel\.app$/
+  ],
   credentials: true
 }));
 app.use(express.json());
