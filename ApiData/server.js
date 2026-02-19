@@ -66,6 +66,20 @@ app.get("/health", (req, res) => {
   res.json({ status: "✅ API is healthy" });
 });
 
+// Debug route to check uploads folder
+app.get("/debug/uploads", (req, res) => {
+  try {
+    const files = fs.readdirSync(uploadsDir);
+    res.json({ 
+      uploadsDir, 
+      filesCount: files.length,
+      files: files.slice(0, 10) // Show first 10 files
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // =======================
 // Start Server
 // =======================
