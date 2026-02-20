@@ -48,25 +48,35 @@ let cacheTTL = Date.now();
 export const getFiles = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 3; // Reduced to 3 for faster initial load
+    const limit = parseInt(req.query.limit) || 3;
     
-    // Validate page and limit
     if (page < 1 || limit < 1) {
       return res.status(400).json({ message: "Invalid page or limit" });
     }
 
     const skip = (page - 1) * limit;
     
-    // Get files with pagination - using .lean() for 3x faster queries
     const files = await File.find()
-      .select("_id title description fileName fileUrl createdAt") // Only needed fields
+      .select("_id title description fileName fileUrl createdAt")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean() // Returns plain JS objects, not Mongoose docs - MUCH FASTER
+      .lean()
       .exec();
     
-    // Cache total count for 30 seconds to avoid repeated countDocuments
+    // Generate signed URLs for files
+    const filesWithSignedUrls = files.map(file => {
+      // Check if it's a Cloudinary URL
+      if (file.fileUrl && file.fileUrl.includes('cloudinary.com')) {
+        const urlParts = file.fileUrl.split('/upload/');
+        if (urlParts.length === 2) {
+          // Add fl_attachment flag for download
+          file.fileUrl = urlParts[0] + '/upload/fl_attachment/' + urlParts[1];
+        }
+      }
+      return file;
+    });
+    
     const now = Date.now();
     if (now - cacheTTL > 30000) {
       totalFilesCache = await File.countDocuments();
@@ -76,10 +86,9 @@ export const getFiles = async (req, res) => {
     const totalFiles = totalFilesCache;
     const totalPages = Math.ceil(totalFiles / limit);
     
-    // Add cache headers
-    res.set('Cache-Control', 'public, max-age=10'); // Cache for 10 seconds
+    res.set('Cache-Control', 'public, max-age=10');
     res.json({
-      files,
+      files: filesWithSignedUrls,
       currentPage: page,
       totalPages,
       totalFiles,
