@@ -35,11 +35,16 @@ if (process.env.CLOUDINARY_URL) {
 // Cloudinary Storage
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'file-share-hub',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt', 'zip'],
-    resource_type: 'auto',
-    public_id: (req, file) => Date.now() + '-' + file.originalname.split('.')[0]
+  params: async (req, file) => {
+    // Determine resource type based on file mimetype
+    const isImage = file.mimetype.startsWith('image/');
+    
+    return {
+      folder: 'file-share-hub',
+      resource_type: isImage ? 'image' : 'raw',
+      public_id: Date.now() + '-' + file.originalname.split('.')[0],
+      format: file.originalname.split('.').pop()
+    };
   }
 });
 
