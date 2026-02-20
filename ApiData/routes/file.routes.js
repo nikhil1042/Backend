@@ -64,6 +64,19 @@ router.post(
 
 router.get("/", verifyToken, getFiles);
 
+// Proxy route for viewing files
+router.get("/view/:id", verifyToken, async (req, res) => {
+  try {
+    const file = await File.findById(req.params.id);
+    if (!file) {
+      return res.status(404).json({ message: "File not found" });
+    }
+    res.redirect(file.fileUrl);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Proxy route for downloading files
 router.get("/download/:id", verifyToken, async (req, res) => {
   try {
