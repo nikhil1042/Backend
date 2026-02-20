@@ -64,19 +64,6 @@ export const getFiles = async (req, res) => {
       .lean()
       .exec();
     
-    // Generate signed URLs for files
-    const filesWithSignedUrls = files.map(file => {
-      // Check if it's a Cloudinary URL
-      if (file.fileUrl && file.fileUrl.includes('cloudinary.com')) {
-        const urlParts = file.fileUrl.split('/upload/');
-        if (urlParts.length === 2) {
-          // Add fl_attachment flag for download
-          file.fileUrl = urlParts[0] + '/upload/fl_attachment/' + urlParts[1];
-        }
-      }
-      return file;
-    });
-    
     const now = Date.now();
     if (now - cacheTTL > 30000) {
       totalFilesCache = await File.countDocuments();
@@ -88,7 +75,7 @@ export const getFiles = async (req, res) => {
     
     res.set('Cache-Control', 'public, max-age=10');
     res.json({
-      files: filesWithSignedUrls,
+      files,
       currentPage: page,
       totalPages,
       totalFiles,
