@@ -11,6 +11,7 @@ import {
   getFiles,
   deleteFile
 } from "../controllers/file.controller.js";
+import File from "../models/file.model.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,6 +63,22 @@ router.post(
 );
 
 router.get("/", verifyToken, getFiles);
+
+// Proxy route for downloading files
+router.get("/download/:id", verifyToken, async (req, res) => {
+  try {
+    const file = await File.findById(req.params.id);
+    if (!file) {
+      return res.status(404).json({ message: "File not found" });
+    }
+    
+    // Redirect to Cloudinary URL with download flag
+    const downloadUrl = file.fileUrl.replace('/upload/', '/upload/fl_attachment/');
+    res.redirect(downloadUrl);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 router.delete(
   "/:id",
