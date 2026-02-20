@@ -6,14 +6,20 @@ import { v2 as cloudinary } from "cloudinary";
 // =====================
 export const uploadFile = async (req, res) => {
   try {
+    console.log('Upload request received');
+    console.log('Body:', JSON.stringify(req.body));
+    console.log('File:', JSON.stringify(req.file));
+    
     const { title, description } = req.body;
 
     if (!req.file) {
+      console.error('No file in request');
       return res.status(400).json({ message: "No file uploaded" });
     }
 
     // Cloudinary automatically uploads and returns URL
     const fileUrl = req.file.path; // Cloudinary URL
+    console.log('File uploaded to Cloudinary:', fileUrl);
 
     const newFile = await File.create({
       title,
@@ -23,11 +29,13 @@ export const uploadFile = async (req, res) => {
       uploadedBy: req.user.id
     });
 
+    console.log('File saved to database:', newFile._id);
     res.status(201).json(newFile);
 
   } catch (error) {
-    console.error("Upload error:", error);
-    res.status(500).json({ message: error.message });
+    console.error("Upload error:", error.message);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ message: error.message, error: error.toString() });
   }
 };
 
