@@ -18,11 +18,17 @@ const __dirname = path.dirname(__filename);
 const router = express.Router();
 
 // Configure Cloudinary
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  console.error('❌ Cloudinary credentials missing in environment variables');
+}
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+console.log('✅ Cloudinary configured:', process.env.CLOUDINARY_CLOUD_NAME);
 
 // Cloudinary Storage
 const storage = new CloudinaryStorage({
@@ -30,11 +36,15 @@ const storage = new CloudinaryStorage({
   params: {
     folder: 'file-share-hub',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt', 'zip'],
-    resource_type: 'auto'
+    resource_type: 'auto',
+    public_id: (req, file) => Date.now() + '-' + file.originalname.split('.')[0]
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 router.post(
   "/upload",
